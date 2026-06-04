@@ -1,0 +1,21 @@
+# Logs
+logs/
+*.log
+
+# State files
+state/
+checkpoint.json
+
+# Temporary files
+*.tmp
+*.bak
+.DS_Store
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Made with Bob
