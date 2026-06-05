@@ -5,14 +5,16 @@ What is Atlas?
 Atlas is a full-stack Rails/Ember application that powers HCP Terraform (formerly Terraform Cloud) at https://app.terraform.io. It provides both the backend API (Ruby on Rails + PostgreSQL) and frontend UI (Ember.js) for managing Terraform infrastructure workflows, supporting both cloud (SaaS) and self-hosted (Enterprise) deployments.
 
 ## PREREQUISITES
--   Download Docker Desktop and move it to Applications folder.
--   Request access to Hashicorp Okta and Hashicorp Okta Certificate using IBM AccessHub.
-- Once the access is granted log into Artifactory through your Okta dashboard. 
+
+- Download Docker Desktop and move it to Applications folder.
+- Request access to Hashicorp Okta and Hashicorp Okta Certificate using IBM AccessHub.
+- Once the access is granted log into Artifactory through your Okta dashboard.
 - Request pull access to artifactory-users group which will also add the Artifactory tile to Okta. https://doormat.hashicorp.services/applications/access/artifactory/role/doormat-artifactory-users/option
-![Requesting access to artifactory-users](images/doormat1.png)
+  ![Requesting access to artifactory-users](images/doormat1.png)
 - User should have a github account with access to the hashicorp organization. (Consult your Engineering Manager for more information getting access)
 
 ## SETUP
+
 1.  Clone the repository
 2.  ```bash
     chmod +x setup.sh
@@ -21,7 +23,7 @@ Atlas is a full-stack Rails/Ember application that powers HCP Terraform (formerl
     ./setup.sh
     ```
 4.  If script fails at any point, check the error message and try to fix it. Once fixed, run the script again using ./setup.sh. The script will resume from the point of failure.
-5. If you want to run the script from start, use 
+5.  If you want to run the script from start, use
     ```bash
     ./setup.sh --reset
     ```
@@ -29,7 +31,7 @@ Atlas is a full-stack Rails/Ember application that powers HCP Terraform (formerl
 ## After Successfull Run
 
 1. ### Setting up RSpec Environment Variables in RubyMine
-To ensure your RSpec tests in RubyMine connect to the stack’s database running in Docker, you need to configure the environment variables within RubyMine's run/debug configurations.
+   To ensure your RSpec tests in RubyMine connect to the stack’s database running in Docker, you need to configure the environment variables within RubyMine's run/debug configurations.
 
 - Open Run/Debug Configurations and remove the existing runs from the list to ensure new configurations are applied to all tests going forward.
 
@@ -38,7 +40,6 @@ To ensure your RSpec tests in RubyMine connect to the stack’s database running
 - Navigate to RSpec in the left-hand panel and open the environment variables.
 
 - Add Environment variables by clicking on “+” sign. These variables are typically used by Rails applications (and thus RSpec tests) to connect to a PostgreSQL database. The values provided here are the defaults for the `tfcdev` PostgreSQL instance.
-
 
 ```
 DATABASE_URL: postgres://hashicorp:hashicorp@localhost:25432/hashicorp
@@ -62,4 +63,9 @@ VAULT_TOKEN: atlas
 
 ## Contributing
 
-To contribute to this project, please make a Pull Request with your proposed changes and add Anoop.P1@ibm.com and Aman.Bora@ibm.com as reviewers.
+We welcome contributions to this project. To submit your changes:
+
+1. Create a Pull Request with your proposed modifications
+2. Add Anoop.P1@ibm.com and Aman.Bora@ibm.com as reviewers
+
+For questions or support, feel free to reach out to us on Slack.
