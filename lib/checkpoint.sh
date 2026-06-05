@@ -229,5 +229,3 @@ execute_phase() {
         return 1
     fi
 }
-
-# Made with Bob

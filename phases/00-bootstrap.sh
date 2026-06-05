@@ -160,7 +160,7 @@ validate_bootstrap() {
 
 # Run bootstrap phase
 run_bootstrap_phase() {
-    execute_phase "bootstrap" \
+    execute_phase "INSTALLING REQUIRED TOOLS" \
         install_xcode_tools \
         install_homebrew \
         install_core_tools \
@@ -168,5 +168,3 @@ run_bootstrap_phase() {
         install_asdf \
         validate_bootstrap
 }
-
-# Made with Bob

@@ -22,20 +22,13 @@ setup_bundler_artifactory() {
     log_warn "tfcdev env artifactory failed or returned empty, falling back to manual configuration"
     log_step "Configuring Bundler Artifactory manually"
     
-    # Get email from environment or derive from USER
-    local email="${HASHICORP_EMAIL:-}"
+    # Get IBM email from environment
+    local email="${IBM_EMAIL:-}"
     
-    # If HASHICORP_EMAIL is not set, derive it from USER
+    # Validate email is set
     if [ -z "$email" ]; then
-        # Check if USER contains @ibm.com
-        if [[ "$USER" == *"@ibm.com" ]]; then
-            # Convert IBM email to HashiCorp email
-            email="${USER/@ibm.com/@hashicorp.com}"
-            log_info "Converted IBM email to HashiCorp email: $email"
-        else
-            # Default to USER@hashicorp.com
-            email="${USER}@hashicorp.com"
-        fi
+        log_error "IBM_EMAIL environment variable is not set"
+        return 1
     fi
     
     log_info "Using email: $email"
@@ -216,7 +209,7 @@ show_backend_status() {
 
 # Run backend phase
 run_backend_phase() {
-    execute_phase "backend" \
+    execute_phase "BACKEND" \
         setup_bundler_artifactory \
         setup_tfcdev_env \
         build_docker_containers \
@@ -225,4 +218,3 @@ run_backend_phase() {
         show_backend_status
 }
 
-# Made with Bob

@@ -133,7 +133,7 @@ reserve_tfcdev_domain() {
         return 0
     fi
     
-    prompt_user_action "You will reserve a tfcdev domain.\nThis may require browser authentication.\nFollow the prompts to complete the reservation."
+    #prompt_user_action "You will reserve a tfcdev domain.\nThis may require browser authentication.\nFollow the prompts to complete the reservation."
     
     # Capture the output of tfcdev domain reserve
     local reserve_output
@@ -193,7 +193,7 @@ validate_repository() {
 
 # Run repository phase
 run_repository_phase() {
-    execute_phase "repository" \
+    execute_phase "REPOSITORY" \
         clone_atlas_repo \
         install_tfcdev \
         initialize_tfcdev \
@@ -201,4 +201,3 @@ run_repository_phase() {
         validate_repository
 }
 
-# Made with Bob

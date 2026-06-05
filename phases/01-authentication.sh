@@ -17,8 +17,8 @@ get_ibm_email() {
     read -r email
     
     # Validate email format
-    if [[ ! "$email" =~ ^[a-zA-Z0-9._%+-]+@hashicorp\.com$ ]]; then
-        log_error "Invalid email format. Must be a @hashicorp.com email address."
+    if [[ ! "$email" =~ ^[a-zA-Z0-9._%+-]+@ibm\.com$ ]]; then
+        log_error "Invalid email format. Must be a @ibm.com email address."
         return 1
     fi
     
@@ -415,7 +415,10 @@ validate_authentication() {
 
 # Run authentication phase
 run_authentication_phase() {
-    execute_phase "authentication" \
+    # Get and store IBM email first
+    get_ibm_email || return 1
+    
+    execute_phase "AUTHENTICATION" \
         setup_github_auth \
         setup_ssh_key \
         configure_git_ssh \
@@ -427,4 +430,3 @@ run_authentication_phase() {
         validate_authentication
 }
 
-# Made with Bob

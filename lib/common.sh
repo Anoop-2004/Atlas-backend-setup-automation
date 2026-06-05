@@ -88,7 +88,7 @@ run_cmd_retry() {
     while [ $attempt -le $max_attempts ]; do
         log_command "$cmd (attempt $attempt/$max_attempts)"
         
-        if eval "$cmd" >> "$LOG_FILE" 2>&1; then
+        if eval "$cmd" 2>&1 | tee -a "$LOG_FILE"; then
             return 0
         fi
         
@@ -162,5 +162,3 @@ init_logging() {
     export LOG_FILE="$log_dir/setup-$(date +%Y%m%d-%H%M%S).log"
     log_info "Logging initialized: $LOG_FILE"
 }
-
-# Made with Bob

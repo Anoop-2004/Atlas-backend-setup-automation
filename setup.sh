@@ -25,6 +25,7 @@ source "$SCRIPT_DIR/phases/01-authentication.sh"
 source "$SCRIPT_DIR/phases/02-repository.sh"
 source "$SCRIPT_DIR/phases/03-backend.sh"
 source "$SCRIPT_DIR/phases/04-frontend.sh"
+source "$SCRIPT_DIR/phases/05-stack.sh"
 
 # Print banner
 print_banner() {
@@ -141,6 +142,9 @@ main() {
     
     # Phase 4: Frontend
     run_frontend_phase || die "Frontend phase failed"
+
+    # Phase 5: Stack
+    run_stack_phase || die "Stack phase failed"
     
     # Setup complete
     log_phase "SETUP COMPLETE"
@@ -163,19 +167,20 @@ main() {
     echo -e "${GREEN}║                                                           ║${RESET}"
     echo -e "${GREEN}╚═══════════════════════════════════════════════════════════╝${RESET}"
     echo ""
+    open "$backend_url"
     echo -e "${BOLD}Next Steps:${RESET}"
     echo ""
     echo -e "1. Backend is running at: ${CYAN}${backend_url}${RESET}\n Login using the following:\n Username: admin \n Password: password123"
     echo ""
     echo -e "2. To stop the backend:"
     echo -e "   ${CYAN}cd $ATLAS_DIR${RESET}"
-    echo -e "   ${CYAN}docker compose down${RESET}"
+    echo -e "   ${CYAN}tfcdev stack down${RESET}"
     echo ""
     echo -e "3. To view logs:"
     echo -e "   ${CYAN}cd $ATLAS_DIR${RESET}"
     echo -e "   ${CYAN}docker compose logs -f${RESET}"
     echo ""
-    echo -e "4. For RubyMine setup, refer to:"
+    echo -e "4. (OPTIONAL)For RubyMine setup, do the following:"
     echo ""
     echo -e "   ${BOLD}RSpec Configuration:${RESET}"
     echo -e "   • Open Run/Debug Configurations and remove existing runs"

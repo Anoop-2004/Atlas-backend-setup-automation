@@ -138,6 +138,9 @@ build_frontend() {
     fi
 }
 
+
+
+
 # Validate frontend setup
 validate_frontend() {
     log_step "Validating frontend setup"
@@ -166,7 +169,7 @@ validate_frontend() {
 
 # Run frontend phase
 run_frontend_phase() {
-    execute_phase "frontend" \
+    execute_phase "FRONTEND" \
         install_nodejs \
         install_pnpm \
         install_frontend_dependencies \
@@ -174,4 +177,4 @@ run_frontend_phase() {
         validate_frontend
 }
 
-# Made with Bob
+

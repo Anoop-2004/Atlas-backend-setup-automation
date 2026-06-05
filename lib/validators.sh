@@ -134,4 +134,3 @@ validate_prerequisites() {
     fi
 }
 
-# Made with Bob
