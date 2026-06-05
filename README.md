@@ -1,6 +1,7 @@
 # ATLAS SETUP AUTOMATION
 
 What is Atlas?
+
 Atlas is a full-stack Rails/Ember application that powers HCP Terraform (formerly Terraform Cloud) at https://app.terraform.io. It provides both the backend API (Ruby on Rails + PostgreSQL) and frontend UI (Ember.js) for managing Terraform infrastructure workflows, supporting both cloud (SaaS) and self-hosted (Enterprise) deployments.
 
 ## PREREQUISITES
