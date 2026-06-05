@@ -62,4 +62,4 @@ VAULT_TOKEN: atlas
 
 ## Contributing
 
-To contribute to this project, please make a Pull Request with your proposed changes.
+To contribute to this project, please make a Pull Request with your proposed changes and add Anoop.P1@ibm.com and Aman.Bora@ibm.com as reviewers.
