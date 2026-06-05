@@ -1,4 +1,7 @@
-# ATLAS BACKEND SETUP AUTOMATION
+# ATLAS SETUP AUTOMATION
+
+What is Atlas?
+Atlas is a full-stack Rails/Ember application that powers HCP Terraform (formerly Terraform Cloud) at https://app.terraform.io. It provides both the backend API (Ruby on Rails + PostgreSQL) and frontend UI (Ember.js) for managing Terraform infrastructure workflows, supporting both cloud (SaaS) and self-hosted (Enterprise) deployments.
 
 ## PREREQUISITES
 -   Download Docker Desktop and move it to Applications folder.
@@ -6,7 +9,7 @@
 - Once the access is granted log into Artifactory through your Okta dashboard. 
 - Request pull access to artifactory-users group which will also add the Artifactory tile to Okta. https://doormat.hashicorp.services/applications/access/artifactory/role/doormat-artifactory-users/option
 ![Requesting access to artifactory-users](images/doormat1.png)
-- User should have a github account with access to the hashicorp organization.
+- User should have a github account with access to the hashicorp organization. (Consult your Engineering Manager for more information getting access)
 
 ## SETUP
 1.  Clone the repository
