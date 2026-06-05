@@ -59,3 +59,7 @@ VAULT_TOKEN: atlas
 - [Getting Started with Atlas Local Backend Development](https://hashicorp.atlassian.net/wiki/spaces/TFENG/pages/2274066581/Getting+Started+with+Atlas+Local+Backend+Development#Install-doormat)
 - [How to Generate Artifactory Credentials](https://hashicorp.atlassian.net/wiki/spaces/TFENG/pages/2301854072/How+to+Generate+Artifactory+Credentials)
 - [Docker Credential Helper for Internal Artifactory Authentication](https://github.com/hashicorp/docker-credential-doormat)
+
+## Contributing
+
+To contribute to this project, please make a Pull Request with your proposed changes.
