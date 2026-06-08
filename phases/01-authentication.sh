@@ -314,7 +314,7 @@ docker_login_hashicorp() {
     
     # Fallback to IBM email if extraction fails
     if [ -z "$username" ] || [ "$username" = "null" ]; then
-        log_warn "Could not extract username from token, using HashiCorp email"
+        log_warn "Could not extract username from token, using given email"
         username=$(get_ibm_email)
         if [ $? -ne 0 ]; then
             return 1

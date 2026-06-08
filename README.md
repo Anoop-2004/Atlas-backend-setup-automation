@@ -15,7 +15,7 @@ Atlas is a full-stack Rails/Ember application that powers HCP Terraform (formerl
 
 ## SETUP
 
-1.  Clone the repository
+1.  Clone the repository and navigate to the Atlas-backend-setup-automation folder
 2.  ```bash
     chmod +x setup.sh
     ```
