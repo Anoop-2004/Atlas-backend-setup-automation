@@ -4,34 +4,57 @@
 # Get IBM email
 get_ibm_email() {
     local email
+    local force_prompt="${1:-false}"
     
-    # Check if already set in environment
-    if [ -n "${IBM_EMAIL:-}" ]; then
-        echo "$IBM_EMAIL"
+    # Check if already set in environment (unless force prompt)
+    if [ "$force_prompt" != "true" ] && [ -n "${IBM_EMAIL:-}" ]; then
+        # Check if this is from a stale session after reset
+        if ! grep -q '^export IBM_EMAIL=' ~/.zshrc 2>/dev/null; then
+            log_warn "IBM_EMAIL is set in current shell but not in ~/.zshrc"
+            log_warn "This may be from a previous session before reset"
+            echo "" >&2
+            echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}" >&2
+            echo -e "${BOLD}${RED}WARNING:${RESET} Using cached email from shell: ${CYAN}${IBM_EMAIL}${RESET}" >&2
+            echo "" >&2
+            echo -e "If you ran ${CYAN}./setup.sh --reset${RESET}, you should:" >&2
+            echo -e "  1. Close this terminal" >&2
+            echo -e "  2. Open a new terminal" >&2
+            echo -e "  3. Run ${CYAN}./setup.sh${RESET} again" >&2
+            echo "" >&2
+            echo -e "Or press Ctrl+C now to exit and restart in a new terminal." >&2
+            echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}" >&2
+            echo "" >&2
+            prompt_user_action "Press ENTER to continue with cached email, or Ctrl+C to exit..."
+        fi
         return 0
     fi
     
     # Prompt user for email
     echo "" >&2
-    echo -e "${BOLD}${CYAN}Enter your IBM email address:${RESET}" >&2
+    echo -e "${BOLD}${CYAN}Enter your email address against which u got authentication to various hashicorp portals:${RESET}" >&2
     read -r email
     
-    # Validate email format
-    if [[ ! "$email" =~ ^[a-zA-Z0-9._%+-]+@ibm\.com$ ]]; then
-        log_error "Invalid email format. Must be a @ibm.com email address."
+    # Basic email validation - check for @ symbol
+    if [[ ! "$email" =~ ^[^@]+@[^@]+\.[^@]+$ ]]; then
+        log_error "Invalid email format. Please enter a valid email address."
         return 1
     fi
     
     # Export for current session and save to environment
     export IBM_EMAIL="$email"
     
-    # Add to zshrc if not already there
-    if ! grep -q '^export IBM_EMAIL=' ~/.zshrc 2>/dev/null; then
+    # Update or add to zshrc
+    if grep -q '^export IBM_EMAIL=' ~/.zshrc 2>/dev/null; then
+        # Update existing entry
+        sed -i.bak "s|^export IBM_EMAIL=.*|export IBM_EMAIL=\"$email\"|" ~/.zshrc
+        rm -f ~/.zshrc.bak
+        log_info "Updated IBM_EMAIL in ~/.zshrc"
+    else
+        # Add new entry
         echo "export IBM_EMAIL=\"$email\"" >> ~/.zshrc
         log_info "Added IBM_EMAIL to ~/.zshrc"
     fi
     
-    echo "$email"
     return 0
 }
 
@@ -295,12 +318,21 @@ docker_login_hashicorp() {
         return 1
     fi
     
-    log_step "Getting Artifactory token from Doormat"
-    local token_response
-    token_response=$(doormat artifactory create-token 2>/dev/null)
+    # Get user email
+    local user_email
+    user_email="${IBM_EMAIL}"
+    if [ -z "$user_email" ]; then
+        log_error "Email address not set. Please ensure IBM_EMAIL is configured."
+        return 1
+    fi
     
+    log_info "Using email for Docker login: $user_email"
+    
+    log_step "Getting Artifactory token from Doormat and logging into Docker registry"
+    
+    # Use the correct command format as specified
     local token
-    token=$(echo "$token_response" | jq -r '.access_token' 2>/dev/null)
+    token=$(doormat artifactory create-token 2>/dev/null | jq -r '.access_token' 2>/dev/null)
     
     if [ -z "$token" ] || [ "$token" = "null" ]; then
         log_error "Failed to get Doormat token"
@@ -308,27 +340,15 @@ docker_login_hashicorp() {
         return 1
     fi
     
-    # Extract username from token's sub field (format: jfac@.../users/email@domain.com)
-    local username
-    username=$(echo "$token_response" | jq -r '.access_token' | cut -d'.' -f2 | base64 -d 2>/dev/null | jq -r '.sub' 2>/dev/null | sed 's|.*/users/||')
-    
-    # Fallback to IBM email if extraction fails
-    if [ -z "$username" ] || [ "$username" = "null" ]; then
-        log_warn "Could not extract username from token, using given email"
-        username=$(get_ibm_email)
-        if [ $? -ne 0 ]; then
-            return 1
-        fi
-    else
-        log_info "Using Artifactory username: $username"
-    fi
-    
-    log_step "Logging into Docker registry"
-    echo "$token" | docker login -u "$username" --password-stdin \
-        cloud-services-docker-virtual.artifactory.hashicorp.engineering
+    # Login to Docker registry with correct registry URL
+    echo "$token" | docker login -u "$user_email" --password-stdin docker.artifactory.hashicorp.engineering
     
     if [ $? -ne 0 ]; then
         log_error "Docker login failed"
+        log_error "Please verify:"
+        log_error "  • Email address is correct: $user_email"
+        log_error "  • You have access to Artifactory (doormat-artifactory-users group)"
+        log_error "  • Doormat authentication is valid"
         return 1
     fi
     
@@ -413,20 +433,138 @@ validate_authentication() {
     fi
 }
 
+# Clear authentication phase checkpoint
+clear_authentication_checkpoint() {
+    if [ -f "$STATE_FILE" ] && command_exists jq; then
+        local tmp_file="${STATE_FILE}.tmp"
+        
+        # Remove all authentication-related steps from completed_steps
+        jq '
+            .completed_steps = [.completed_steps[] | select(. | test("setup_github_auth|setup_ssh_key|configure_git_ssh|install_doormat|setup_doormat_auth|install_docker_credential_helper|docker_login_hashicorp|configure_docker_credential_helpers|validate_authentication") | not)] |
+            .completed_phases = [.completed_phases[] | select(. != "AUTHENTICATION")] |
+            .current_phase = null |
+            .current_step = null |
+            .last_updated = "'"$(date -u +"%Y-%m-%dT%H:%M:%SZ")"'"
+        ' "$STATE_FILE" > "$tmp_file" && mv "$tmp_file" "$STATE_FILE"
+        
+        log_info "Cleared authentication phase checkpoint"
+    fi
+}
+
 # Run authentication phase
 run_authentication_phase() {
-    # Get and store IBM email first
-    get_ibm_email || return 1
+    local max_retries=3
+    local retry_count=0
     
-    execute_phase "AUTHENTICATION" \
-        setup_github_auth \
-        setup_ssh_key \
-        configure_git_ssh \
-        install_doormat \
-        setup_doormat_auth \
-        install_docker_credential_helper \
-        docker_login_hashicorp \
-        configure_docker_credential_helpers \
-        validate_authentication
+    while [ $retry_count -lt $max_retries ]; do
+        # Get and store IBM email first
+        if [ $retry_count -eq 0 ]; then
+            get_ibm_email || return 1
+        else
+            # On retry, force re-prompt for email
+            log_warn "Authentication failed. Restarting from step 1."
+            log_warn "Please re-enter your email address."
+            
+            # Clear the authentication phase checkpoint to restart from step 1
+            clear_authentication_checkpoint
+            
+            # Clear the cached email
+            unset IBM_EMAIL
+            
+            # Remove from zshrc
+            if grep -q '^export IBM_EMAIL=' ~/.zshrc 2>/dev/null; then
+                sed -i.bak '/^export IBM_EMAIL=/d' ~/.zshrc
+                rm -f ~/.zshrc.bak
+            fi
+            
+            # Force prompt for new email
+            get_ibm_email true || return 1
+        fi
+        
+        # Try authentication from step 1
+        if execute_phase "AUTHENTICATION" \
+            setup_github_auth \
+            setup_ssh_key \
+            configure_git_ssh \
+            install_doormat \
+            setup_doormat_auth \
+            install_docker_credential_helper \
+            docker_login_hashicorp \
+            configure_docker_credential_helpers \
+            validate_authentication; then
+            # Authentication succeeded
+            return 0
+        fi
+        
+        # Authentication failed - get the failed step from checkpoint
+        local failed_step=""
+        if [ -f "$STATE_FILE" ] && command_exists jq; then
+            failed_step=$(jq -r '.failed_steps[-1] // "unknown"' "$STATE_FILE" 2>/dev/null)
+        fi
+        
+        retry_count=$((retry_count + 1))
+        
+        if [ $retry_count -lt $max_retries ]; then
+            echo ""
+            log_warn "Authentication attempt $retry_count of $max_retries failed"
+            
+            # Show which step failed
+            if [ -n "$failed_step" ] && [ "$failed_step" != "unknown" ] && [ "$failed_step" != "null" ]; then
+                echo ""
+                echo -e "${RED}Failed at step:${RESET} ${BOLD}$failed_step${RESET}"
+            fi
+            
+            echo ""
+            echo -e "${YELLOW}Possible reasons for failure:${RESET}"
+            
+            # Provide specific guidance based on failed step
+            case "$failed_step" in
+                setup_github_auth)
+                    echo -e "  • GitHub authentication not completed in browser"
+                    echo -e "  • GitHub account not linked to HashiCorp organization"
+                    ;;
+                setup_ssh_key)
+                    echo -e "  • SSH key not added to GitHub"
+                    echo -e "  • SSH key already in use by another account"
+                    ;;
+                install_doormat|setup_doormat_auth)
+                    echo -e "  • Okta authentication not completed"
+                    echo -e "  • No access to HashiCorp Okta"
+                    echo -e "  • Missing Doormat permissions"
+                    ;;
+                docker_login_hashicorp)
+                    echo -e "  • Incorrect email address for Artifactory"
+                    echo -e "  • No access to Artifactory (missing doormat-artifactory-users group)"
+                    echo -e "  • Doormat token expired or invalid"
+                    ;;
+                *)
+                    echo -e "  • Incorrect email address"
+                    echo -e "  • Okta authentication not completed"
+                    echo -e "  • Missing permissions in Doormat/Artifactory"
+                    ;;
+            esac
+            
+            echo ""
+            echo -e "${CYAN}Check the log file for details:${RESET}"
+            echo -e "  ${DIM}tail -50 $LOG_FILE${RESET}"
+            echo ""
+            prompt_user_action "Press ENTER to restart authentication from step 1 with a different email..."
+        fi
+    done
+    
+    # All retries exhausted
+    log_error "Authentication failed after $max_retries attempts"
+    
+    # Show final failed step
+    if [ -f "$STATE_FILE" ] && command_exists jq; then
+        local failed_step=$(jq -r '.failed_steps[-1] // "unknown"' "$STATE_FILE" 2>/dev/null)
+        if [ -n "$failed_step" ] && [ "$failed_step" != "unknown" ] && [ "$failed_step" != "null" ]; then
+            echo ""
+            echo -e "${RED}Last failed step:${RESET} ${BOLD}$failed_step${RESET}"
+            echo -e "${CYAN}Check the log file:${RESET} $LOG_FILE"
+        fi
+    fi
+    
+    return 1
 }
 

@@ -102,7 +102,34 @@ init_checkpoint
 if [ "$RESET_CHECKPOINT" = true ]; then
     log_warn "Resetting checkpoint..."
     reset_checkpoint
+    
+    # Clear IBM_EMAIL from environment to force re-prompt
+    if [ -n "${IBM_EMAIL:-}" ]; then
+        unset IBM_EMAIL
+        log_info "Cleared IBM_EMAIL from current session"
+    fi
+    
+    # Remove IBM_EMAIL from zshrc
+    if grep -q '^export IBM_EMAIL=' ~/.zshrc 2>/dev/null; then
+        sed -i.bak '/^export IBM_EMAIL=/d' ~/.zshrc
+        rm -f ~/.zshrc.bak
+        log_info "Removed IBM_EMAIL from ~/.zshrc"
+    fi
+    
     log_info "Checkpoint reset complete"
+    echo ""
+    echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+    echo -e "${BOLD}${CYAN}IMPORTANT:${RESET} To ensure a clean reset, please:"
+    echo ""
+    echo -e "  1. ${BOLD}Close this terminal${RESET} and open a new one"
+    echo -e "     ${DIM}(This ensures IBM_EMAIL is not cached in your shell)${RESET}"
+    echo ""
+    echo -e "  2. Run the setup again:"
+    echo -e "     ${CYAN}./setup.sh${RESET}"
+    echo ""
+    echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+    echo ""
+    exit 0
 fi
 
 # Handle status

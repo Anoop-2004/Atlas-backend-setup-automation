@@ -9,6 +9,7 @@ BLUE='\033[0;34m'
 MAGENTA='\033[0;35m'
 CYAN='\033[0;36m'
 BOLD='\033[1m'
+DIM='\033[2m'
 RESET='\033[0m'
 
 # Logging functions
@@ -25,6 +26,25 @@ log_warn() {
 log_error() {
     echo -e "${RED}[✗]${RESET} $*" >&2
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: $*" >> "$LOG_FILE"
+    show_recovery_options
+}
+
+# Show recovery options after error
+show_recovery_options() {
+    echo "" >&2
+    echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}" >&2
+    echo -e "${BOLD}${CYAN}Recovery Options:${RESET}" >&2
+    echo "" >&2
+    echo -e "  ${GREEN}•${RESET} To ${BOLD}resume${RESET} from where you left off:" >&2
+    echo -e "    ${CYAN}./setup.sh${RESET}" >&2
+    echo "" >&2
+    echo -e "  ${GREEN}•${RESET} To ${BOLD}restart from scratch${RESET}:" >&2
+    echo -e "    ${CYAN}./setup.sh --reset${RESET}" >&2
+    echo "" >&2
+    echo -e "  ${GREEN}•${RESET} To ${BOLD}check current status${RESET}:" >&2
+    echo -e "    ${CYAN}./setup.sh --status${RESET}" >&2
+    echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}" >&2
+    echo "" >&2
 }
 
 log_step() {
@@ -101,7 +121,9 @@ run_cmd_retry() {
         attempt=$((attempt + 1))
     done
     
-    log_error "Command failed after $max_attempts attempts: $cmd"
+    echo -e "${RED}[✗]${RESET} Command failed after $max_attempts attempts: $cmd" >&2
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: Command failed after $max_attempts attempts: $cmd" >> "$LOG_FILE"
+    show_recovery_options
     return 1
 }
 
@@ -142,8 +164,21 @@ ensure_dir() {
 
 # Die with error message
 die() {
-    log_error "$*"
+    echo -e "${RED}[✗]${RESET} $*" >&2
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: $*" >> "$LOG_FILE"
+    show_recovery_options
     exit 1
+}
+
+# Handle script interruption (Ctrl+C)
+handle_interrupt() {
+    echo "" >&2
+    echo "" >&2
+    echo -e "${YELLOW}[⚠]${RESET} ${BOLD}Script interrupted by user${RESET}" >&2
+    echo "" >&2
+    echo -e "${GREEN}[✓]${RESET} Progress has been saved to checkpoint" >&2
+    show_recovery_options
+    exit 130
 }
 
 # Cleanup on exit
@@ -154,6 +189,7 @@ cleanup() {
 }
 
 trap cleanup EXIT
+trap handle_interrupt SIGINT SIGTERM
 
 # Initialize logging
 init_logging() {
