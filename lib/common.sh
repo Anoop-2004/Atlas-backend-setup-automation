@@ -26,7 +26,6 @@ log_warn() {
 log_error() {
     echo -e "${RED}[✗]${RESET} $*" >&2
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: $*" >> "$LOG_FILE"
-    show_recovery_options
 }
 
 # Show recovery options after error
@@ -123,7 +122,6 @@ run_cmd_retry() {
     
     echo -e "${RED}[✗]${RESET} Command failed after $max_attempts attempts: $cmd" >&2
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: Command failed after $max_attempts attempts: $cmd" >> "$LOG_FILE"
-    show_recovery_options
     return 1
 }
 
