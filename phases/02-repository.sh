@@ -72,7 +72,6 @@ install_tfcdev() {
     fi
     
     log_step "Installing tfcdev"
-    run_cmd_retry git s
     
     if command_exists tfcdev; then
         log_info "tfcdev installed successfully: $(tfcdev version)"
