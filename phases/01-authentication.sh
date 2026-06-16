@@ -50,7 +50,8 @@ get_ibm_email() {
         rm -f ~/.zshrc.bak
         log_info "Updated IBM_EMAIL in ~/.zshrc"
     else
-        # Add new entry
+        # Add new entry with newline to ensure it's on its own line
+        echo "" >> ~/.zshrc
         echo "export IBM_EMAIL=\"$email\"" >> ~/.zshrc
         log_info "Added IBM_EMAIL to ~/.zshrc"
     fi
@@ -109,6 +110,9 @@ setup_ssh_key() {
     ssh_test=$(ssh -T git@github.com 2>&1)
     if echo "$ssh_test" | grep -qi "successfully authenticated"; then
         log_info "SSH connection to GitHub already working"
+        # Prompt for GitHub SSO authorization
+        prompt_user_action "1. Go to GitHub -> Settings -> SSH and GPG keys\n2. Find the SSH Key\n3. Go to Configure SSO\n4. Click Authorize button near hashicorp"
+        
         return 0
     fi
     
@@ -162,6 +166,10 @@ setup_ssh_key() {
     ssh_test=$(ssh -T git@github.com 2>&1)
     if echo "$ssh_test" | grep -qi "successfully authenticated"; then
         log_info "SSH connection to GitHub verified"
+        
+        # Prompt for GitHub SSO authorization
+        prompt_user_action "1. Go to GitHub -> Settings -> SSH and GPG keys\n2. Find the SSH Key\n3. Go to Configure SSO\n4. Click Authorize button near hashicorp"
+        
         return 0
     else
         log_error "SSH connection to GitHub failed. Please verify the key was added correctly."

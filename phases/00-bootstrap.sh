@@ -36,8 +36,16 @@ install_homebrew() {
     if [[ $(uname -m) == "arm64" ]]; then
         eval "$(/opt/homebrew/bin/brew shellenv)"
         
-        # Add to shell profile if not already there
+        # Add to .zprofile (login shell) if not already there
+        if ! grep -q "brew shellenv" ~/.zprofile 2>/dev/null; then
+            echo >> ~/.zprofile
+            echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
+            log_info "Added Homebrew to ~/.zprofile"
+        fi
+        
+        # Add to .zshrc (interactive shell) if not already there
         if ! grep -q "brew shellenv" ~/.zshrc 2>/dev/null; then
+            echo >> ~/.zshrc
             echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zshrc
             log_info "Added Homebrew to ~/.zshrc"
         fi

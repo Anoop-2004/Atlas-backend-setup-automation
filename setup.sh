@@ -152,7 +152,7 @@ main() {
     show_checkpoint_summary
     
     # Display prerequisites
-    prompt_user_action "PREREQUISITES:\n\n  • User should have an Okta account. This can be obtained by \n requesting access to 'Hashicorp Okta' and 'Hashicorp Okta Certificate' in IBM Access Hub.\n\n  • Request pull access to artifactory-users group which will also add\n    the Artifactory tile to Okta:\n    https://doormat.hashicorp.services/applications/access/artifactory/role/doormat-artifactory-users/options\n\n  • User should have a Github account and have access to the\n    HashiCorp organization\n\n${BOLD}Please ensure all prerequisites are met before continuing.${RESET}"
+    prompt_user_action "PREREQUISITES:\n\n  • User should have an Okta account. This can be obtained by \n requesting access to 'Hashicorp Okta' and 'Hashicorp Okta Certificate' in IBM Access Hub.\n\n  • Request pull access to artifactory-users group which will also add\n    the Artifactory tile to Okta:\n    https://doormat.hashicorp.services/applications/access/artifactory/role/doormat-artifactory-users/options\n\n  • User should have a Github account and have access to the\n    HashiCorp organization\n\n${BOLD}Please ensure all prerequisites are met before continuing.\n Note: Please wait for 2-3 hours once all prerequisites are completed and rerun the script. ${RESET}"
     
     # Phase 0: Bootstrap
     run_bootstrap_phase || die "Bootstrap phase failed"
