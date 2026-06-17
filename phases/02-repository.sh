@@ -72,6 +72,7 @@ install_tfcdev() {
     fi
     
     log_step "Installing tfcdev"
+    run_cmd_retry brew install hashicorp/internal/tfcdev
     
     if command_exists tfcdev; then
         log_info "tfcdev installed successfully: $(tfcdev version)"
