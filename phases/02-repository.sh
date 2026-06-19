@@ -99,17 +99,31 @@ initialize_tfcdev() {
         return 0
     fi
     
-    # Run tfcdev init and capture output
-    local init_output
-    init_output=$(tfcdev init 2>&1)
+    # Suggest the default code folder path (parent of all HashiCorp repos)
+    local code_folder="$HOME/hashicorp"
+    
+    echo ""
+    log_info "tfcdev will prompt you for the folder containing your HashiCorp repository working copies"
+    log_info "Suggested path: $code_folder"
+    echo ""
+    
+    # Create a temporary file to capture output
+    local temp_output
+    temp_output=$(mktemp)
+    
+    # Run tfcdev init interactively, using script command to preserve TTY
+    # This allows interactive input while capturing output
+    script -q "$temp_output" tfcdev init
     local exit_code=$?
+    
+    # Read the captured output
+    local init_output
+    init_output=$(cat "$temp_output")
+    rm -f "$temp_output"
     
     # Log the output to file
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] tfcdev init output:" >> "$LOG_FILE"
     echo "$init_output" >> "$LOG_FILE"
-    
-    # Display the output to user
-    echo "$init_output"
     
     # Check for health check issues in the output
     if echo "$init_output" | grep -q "Report built with issues reported"; then
