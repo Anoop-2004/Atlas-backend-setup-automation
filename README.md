@@ -12,6 +12,14 @@ Atlas is a full-stack Rails/Ember application that powers HCP Terraform (formerl
 - Request pull access to artifactory-users group which will also add the Artifactory tile to Okta. https://doormat.hashicorp.services/applications/access/artifactory/role/doormat-artifactory-users/option
   ![Requesting access to artifactory-users](images/doormat1.png)
 - User should have a github account with access to the hashicorp organization. (Consult your Engineering Manager for more information getting access)
+- If you are doing the setup from home, make sure that VPN is disconnected and IPv6 is disabled in your system.
+    -   Go to System Settings-> Network-> WiFi
+    -   Click Details and go to TCP/IP
+    -   Change Configure options to 'link-local only'
+
+[Note]: Once the setup is complete, make sure to enable IPv6 in your system.
+
+[Note]: Access requests may take 2-3 hours to become effective. Run the script 2-3 hours after completing the prerequisites.
 
 ## SETUP
 
