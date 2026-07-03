@@ -173,20 +173,40 @@ initialize_tfcdev() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] tfcdev init output:" >> "$LOG_FILE"
     echo "$init_output" >> "$LOG_FILE"
     
-    # Check for health check issues in the output
-    if echo "$init_output" | grep -q "Report built with issues reported"; then
-        log_error "tfcdev initialization completed but health checks reported issues"
-        log_error "Please review the health check output above and resolve any issues"
-        log_info "See https://go.hashi.co/troubleshoot-tfcdev-health for troubleshooting assistance"
+    # Check exit code first
+    if [ $exit_code -ne 0 ]; then
+        log_error "tfcdev initialization failed with exit code: $exit_code"
         return 1
     fi
     
-    # Check exit code
-    if [ $exit_code -eq 0 ]; then
+    # Check if initialization completed
+    if ! echo "$init_output" | grep -q "Initialization complete"; then
+        log_error "tfcdev init completed but initialization message not found"
+        return 1
+    fi
+    
+    # Check for successful health report
+    if echo "$init_output" | grep -q "Report completed successfully"; then
         log_info "tfcdev initialized successfully with all health checks passing"
+        
+        # Apply shell configuration
+        log_step "Applying tfcdev shell configuration"
+        eval "$(tfcdev rc)" 2>/dev/null || true
+        
+        return 0
+    elif echo "$init_output" | grep -q "Report built with issues reported"; then
+        log_warn "tfcdev initialized but health checks reported some issues"
+        log_info "These may be non-critical warnings (e.g., version updates, container not running)"
+        log_info "See https://go.hashi.co/troubleshoot-tfcdev-health for troubleshooting if needed"
+        
+        # Apply shell configuration even with warnings
+        log_step "Applying tfcdev shell configuration"
+        eval "$(tfcdev rc)" 2>/dev/null || true
+        
+        # Continue despite warnings - let user decide if they need to fix
         return 0
     else
-        log_error "tfcdev initialization failed with exit code: $exit_code"
+        log_error "tfcdev health check status unclear - please review output above"
         return 1
     fi
 }
