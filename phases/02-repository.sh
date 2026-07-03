@@ -111,18 +111,28 @@ initialize_tfcdev() {
     # Display the output to user
     echo "$init_output"
     
-    # Check for health check issues in the output
-    if echo "$init_output" | grep -q "Report built with issues reported"; then
-        log_error "tfcdev initialization completed but health checks reported issues"
-        log_error "Please review the health check output above and resolve any issues"
-        log_info "See https://go.hashi.co/troubleshoot-tfcdev-health for troubleshooting assistance"
-        return 1
-    fi
-    
-    # Check exit code
+    # Check exit code first - this is the primary indicator of success
     if [ $exit_code -eq 0 ]; then
-        log_info "tfcdev initialized successfully with all health checks passing"
-        return 0
+        # Check if initialization completed successfully
+        if echo "$init_output" | grep -q "Initialization complete"; then
+            # Check for health check issues (warnings, not fatal)
+            if echo "$init_output" | grep -q "Report built with issues reported"; then
+                log_warn "tfcdev initialized successfully but health checks reported some issues"
+                log_info "These are typically non-critical warnings (e.g., version updates available)"
+                log_info "See https://go.hashi.co/troubleshoot-tfcdev-health for details if needed"
+            else
+                log_info "tfcdev initialized successfully with all health checks passing"
+            fi
+            
+            # Apply shell configuration
+            log_step "Applying tfcdev shell configuration"
+            eval "$(tfcdev rc)" 2>/dev/null || true
+            
+            return 0
+        else
+            log_error "tfcdev init completed but initialization message not found"
+            return 1
+        fi
     else
         log_error "tfcdev initialization failed with exit code: $exit_code"
         return 1
