@@ -6,7 +6,7 @@ install_nodejs() {
     log_step "Installing Node.js via asdf"
     
     # Source asdf
-    . "$(brew --prefix asdf)/libexec/asdf.sh"
+    source_asdf || return 1
     
     # Add nodejs plugin if not already added
     if ! asdf plugin list | grep -q "nodejs"; then
@@ -46,7 +46,7 @@ install_pnpm() {
     log_step "Installing pnpm via asdf"
     
     # Source asdf
-    . "$(brew --prefix asdf)/libexec/asdf.sh"
+    source_asdf || return 1
     
     # Add pnpm plugin if not already added
     if ! asdf plugin list | grep -q "pnpm"; then
@@ -90,7 +90,7 @@ install_frontend_dependencies() {
     cd "$frontend_dir" || return 1
     
     # Source asdf to ensure pnpm is available
-    . "$(brew --prefix asdf)/libexec/asdf.sh"
+    source_asdf || return 1
     
     # Check if node_modules already exists
     if [ -d "node_modules" ]; then
@@ -119,7 +119,7 @@ build_frontend() {
     cd "$frontend_dir" || return 1
     
     # Source asdf
-    . "$(brew --prefix asdf)/libexec/asdf.sh"
+    source_asdf || return 1
     
     # Check if already built
     if [ -d "dist" ]; then
@@ -146,7 +146,7 @@ validate_frontend() {
     log_step "Validating frontend setup"
     
     # Source asdf
-    . "$(brew --prefix asdf)/libexec/asdf.sh"
+    source_asdf || return 1
     
     local failed=0
     

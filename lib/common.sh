@@ -125,6 +125,29 @@ run_cmd_retry() {
     return 1
 }
 
+# Source asdf shell integration, tolerating path differences across Homebrew versions.
+# Older Homebrew asdf: $(brew --prefix asdf)/libexec/asdf.sh
+# Some versions:       $(brew --prefix asdf)/etc/profile.d/asdf.sh
+# Latest Homebrew asdf (>= 0.16): no asdf.sh — binary is on PATH, shims need explicit export
+source_asdf() {
+    local brew_prefix
+    brew_prefix="$(brew --prefix asdf 2>/dev/null)" || true
+
+    if [ -f "${brew_prefix}/libexec/asdf.sh" ]; then
+        # shellcheck disable=SC1091
+        . "${brew_prefix}/libexec/asdf.sh"
+    elif [ -f "${brew_prefix}/etc/profile.d/asdf.sh" ]; then
+        # shellcheck disable=SC1091
+        . "${brew_prefix}/etc/profile.d/asdf.sh"
+    elif command -v asdf >/dev/null 2>&1; then
+        # asdf >= 0.16: no shell integration file — ensure shims are on PATH
+        export PATH="$HOME/.asdf/shims:$PATH"
+    else
+        log_error "Cannot locate asdf. Is it installed? Run: brew install asdf"
+        return 1
+    fi
+}
+
 # Check if command exists
 command_exists() {
     command -v "$1" >/dev/null 2>&1

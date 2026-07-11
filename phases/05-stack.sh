@@ -9,7 +9,7 @@ build_stack() {
     cd "$atlas_dir" || return 1
     
     # Source asdf to ensure tfcdev is available
-    . "$(brew --prefix asdf)/libexec/asdf.sh"
+    source_asdf || return 1
     
     # Check if tfcdev is available
     if ! command_exists tfcdev; then
@@ -40,7 +40,7 @@ start_stack() {
     cd "$atlas_dir" || return 1
     
     # Source asdf to ensure tfcdev is available
-    . "$(brew --prefix asdf)/libexec/asdf.sh"
+    source_asdf || return 1
     
     # Run tfcdev stack up with retry
     run_cmd_retry tfcdev stack up

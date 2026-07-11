@@ -125,15 +125,20 @@ install_asdf() {
     log_step "Installing asdf"
     run_cmd_retry brew install asdf
     
-    # Add asdf to shell profile
-    if ! grep -q "asdf.sh" ~/.zshrc 2>/dev/null; then
+    # Add asdf to shell profile (only for older Homebrew asdf that ships asdf.sh)
+    if ! grep -q "asdf" ~/.zshrc 2>/dev/null; then
         echo -e '\n# asdf version manager' >> ~/.zshrc
-        echo '. $(brew --prefix asdf)/libexec/asdf.sh' >> ~/.zshrc
+        # Probe both known paths; newer asdf needs no sourcing (binary is on PATH)
+        echo 'if [ -f "$(brew --prefix asdf 2>/dev/null)/libexec/asdf.sh" ]; then' >> ~/.zshrc
+        echo '  . "$(brew --prefix asdf)/libexec/asdf.sh"' >> ~/.zshrc
+        echo 'elif [ -f "$(brew --prefix asdf 2>/dev/null)/etc/profile.d/asdf.sh" ]; then' >> ~/.zshrc
+        echo '  . "$(brew --prefix asdf)/etc/profile.d/asdf.sh"' >> ~/.zshrc
+        echo 'fi' >> ~/.zshrc
         log_info "Added asdf to ~/.zshrc"
     fi
-    
+
     # Source asdf for current session
-    . "$(brew --prefix asdf)/libexec/asdf.sh"
+    source_asdf || return 1
     
     if command_exists asdf; then
         log_info "asdf installed successfully: $(asdf version)"

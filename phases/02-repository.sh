@@ -141,8 +141,18 @@ setup_artifactory_token() {
 initialize_tfcdev() {
     log_step "Initializing tfcdev"
     
-    # Check if tfcdev is already initialized by checking for config
-    if [ -f "$HOME/.tfcdev/config.yml" ] || [ -f "$HOME/.config/tfcdev/config.yml" ]; then
+    # Resolve tfcdev's config dir the same way Go's os.UserConfigDir() does:
+    #   macOS  → ~/Library/Application Support
+    #   Linux  → $XDG_CONFIG_HOME, or ~/.config if unset
+    local tfcdev_config_dir
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        tfcdev_config_dir="$HOME/Library/Application Support"
+    else
+        tfcdev_config_dir="${XDG_CONFIG_HOME:-$HOME/.config}"
+    fi
+
+    # Check if tfcdev is already initialized by checking for its config file
+    if [ -f "$tfcdev_config_dir/tfcdev/config.json" ]; then
         log_skip "tfcdev already initialized"
         return 0
     fi
