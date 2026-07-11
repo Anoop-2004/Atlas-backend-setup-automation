@@ -121,9 +121,20 @@ setup_artifactory_token() {
     
     log_info "Using email: $email"
     
+    # Skip re-login if the existing session is still valid.
+    # doormat login -f unconditionally hits the network for a version check
+    # and times out when connectivity to doormat.hashicorp.services is flaky.
+    if ! doormat login --validate >/dev/null 2>&1; then
+        log_step "Authenticating with Doormat"
+        if ! doormat login; then
+            log_error "Failed to authenticate with Doormat"
+            return 1
+        fi
+    fi
+
     local token
-    token=$(doormat login -f && doormat artifactory create-token | jq -r '.access_token')
-    
+    token=$(doormat artifactory create-token | jq -r '.access_token')
+
     if [ -z "$token" ] || [ "$token" = "null" ]; then
         log_error "Failed to get Doormat token for Bundler"
         return 1

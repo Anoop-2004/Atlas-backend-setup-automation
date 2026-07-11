@@ -106,8 +106,8 @@ run_cmd_retry() {
     
     while [ $attempt -le $max_attempts ]; do
         log_command "$cmd (attempt $attempt/$max_attempts)"
-        
-        if eval "$cmd" 2>&1 | tee -a "$LOG_FILE"; then
+
+        if eval "$cmd"; then
             return 0
         fi
         
