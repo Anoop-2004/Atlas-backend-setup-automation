@@ -121,16 +121,11 @@ build_frontend() {
     # Source asdf
     source_asdf || return 1
     
-    # Check if already built
-    if [ -d "dist" ]; then
-        log_skip "Frontend already built"
-        return 0
-    fi
-    
     pnpm build
     
     if [ -d "dist" ]; then
         log_info "Frontend built successfully"
+        prompt_frontend_start
         return 0
     else
         log_error "Frontend build failed"
@@ -138,6 +133,19 @@ build_frontend() {
     fi
 }
 
+# Prompt user to start the frontend dev server and display ngrok credentials
+prompt_frontend_start() {
+    log_step "Retrieving ngrok credentials"
+
+    local ngrok_output
+    ngrok_output=$(tfcdev env ngrok 2>&1)
+
+    local ngrok_user ngrok_pass
+    ngrok_user=$(echo "$ngrok_output" | grep 'NGROK_HTTP_BASIC_AUTH_USER' | sed 's/.*="\(.*\)"/\1/')
+    ngrok_pass=$(echo "$ngrok_output" | grep 'NGROK_HTTP_BASIC_AUTH_PASSWORD' | sed 's/.*="\(.*\)"/\1/')
+
+    prompt_user_action "To run the frontend dev server:\n\n  1. Open a new terminal\n  2. cd ~/hashicorp/atlas/frontend/atlas\n  3. pnpm start\n  4. Go to http://localhost:4200/\n\nUse the following credentials to log in:\n\n  Username: ${ngrok_user}\n  Password: ${ngrok_pass}"
+}
 
 
 
