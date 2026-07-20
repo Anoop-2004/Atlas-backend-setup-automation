@@ -162,8 +162,12 @@ initialize_tfcdev() {
         tfcdev_config_dir="${XDG_CONFIG_HOME:-$HOME/.config}"
     fi
 
-    # Check if tfcdev is already initialized by checking for its config file
-    if [ -f "$tfcdev_config_dir/tfcdev/config.json" ]; then
+    # config.json is created on installation with empty values.
+    # A completed `tfcdev init` sets last_run_init.version to a non-empty semver string.
+    # Check for that to distinguish "installed but not initialized" from "initialized".
+    local tfcdev_config="$tfcdev_config_dir/tfcdev/config.json"
+    if [ -f "$tfcdev_config" ] && \
+       grep -Eq '"version": ".+"' "$tfcdev_config" 2>/dev/null; then
         log_skip "tfcdev already initialized"
         return 0
     fi

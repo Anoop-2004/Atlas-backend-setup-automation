@@ -135,6 +135,7 @@ setup_ssh_key() {
         ssh_test=$(ssh -T git@github.com 2>&1)
         if echo "$ssh_test" | grep -qi "successfully authenticated"; then
             log_info "SSH key added and verified successfully"
+            prompt_user_action "1. Go to GitHub -> Settings -> SSH and GPG keys\n2. Find the SSH Key\n3. Go to Configure SSO\n4. Click Authorize button near hashicorp"
             return 0
         fi
     fi
