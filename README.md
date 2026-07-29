@@ -16,6 +16,9 @@ Atlas is a full-stack Rails/Ember application that powers HCP Terraform (formerl
     - Provide a justification and click submit
   ![Requesting access to artifactory-users](images/doormat1.png)
 - User should have a github account with access to the hashicorp organization. (Consult your Engineering Manager for more information getting access)
+- Once your Github account gets activated, request access to following teams
+    - ["core" team](https://passport.hashicorp.services/namespaces/doormat/groups/github-access-core)
+    - [“terraform-enterprise” team ](https://passport.hashicorp.services/namespaces/doormat/groups/github-hashicorp-team-terraform-enterprise)
 - If you are doing the setup from home, make sure that VPN is disconnected and IPv6 is disabled in your system.
     -   Go to System Settings-> Network-> WiFi
     -   Click Details and go to TCP/IP
