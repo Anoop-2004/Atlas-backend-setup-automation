@@ -32,7 +32,15 @@ clone_atlas_repo() {
 # Install tfcdev
 install_tfcdev() {
     # Export HOMEBREW_GITHUB_API_TOKEN for private tap access
-    export HOMEBREW_GITHUB_API_TOKEN="${GITHUB_TOKEN:-$(gh auth token 2>/dev/null)}"
+    if [ -n "${GITHUB_TOKEN:-}" ]; then
+        export HOMEBREW_GITHUB_API_TOKEN="$GITHUB_TOKEN"
+    elif command_exists gh; then
+        local gh_token
+        gh_token=$(gh auth token 2>/dev/null || echo "")
+        if [ -n "$gh_token" ]; then
+            export HOMEBREW_GITHUB_API_TOKEN="$gh_token"
+        fi
+    fi
     
     # Add HashiCorp internal tap if not already added
     if ! validate_brew_tap "hashicorp/internal" 2>/dev/null; then
@@ -72,7 +80,8 @@ install_tfcdev() {
     fi
     
     log_step "Installing tfcdev"
-    run_cmd_retry git s
+    brew trust hashicorp/internal
+    run_cmd_retry brew install hashicorp/internal/tfcdev
     
     if command_exists tfcdev; then
         log_info "tfcdev installed successfully: $(tfcdev version)"
@@ -89,42 +98,140 @@ install_tfcdev() {
     fi
 }
 
+# Setup Artifactory token for bundle
+setup_artifactory_token() {
+    log_step "Setting up Artifactory token for bundle"
+    
+    # Get email from environment variable or load from zshrc
+    local email="${IBM_EMAIL:-}"
+    
+    if [ -z "$email" ] && [ -f ~/.zshrc ]; then
+        # Load from zshrc if not in environment
+        email=$(grep '^export IBM_EMAIL=' ~/.zshrc 2>/dev/null | sed 's/^export IBM_EMAIL="\(.*\)"$/\1/')
+        if [ -n "$email" ]; then
+            export IBM_EMAIL="$email"
+            log_info "Loaded IBM_EMAIL from ~/.zshrc"
+        fi
+    fi
+    
+    if [ -z "$email" ]; then
+        log_error "IBM_EMAIL not found. Please ensure authentication phase completed successfully."
+        return 1
+    fi
+    
+    log_info "Using email: $email"
+    
+    # Skip re-login if the existing session is still valid.
+    # doormat login -f unconditionally hits the network for a version check
+    # and times out when connectivity to doormat.hashicorp.services is flaky.
+    if ! doormat login --validate >/dev/null 2>&1; then
+        log_step "Authenticating with Doormat"
+        if ! doormat login; then
+            log_error "Failed to authenticate with Doormat"
+            return 1
+        fi
+    fi
+
+    local token
+    token=$(doormat artifactory create-token | jq -r '.access_token')
+
+    if [ -z "$token" ] || [ "$token" = "null" ]; then
+        log_error "Failed to get Doormat token for Bundler"
+        return 1
+    fi
+    
+    # URL encode the email (replace @ with %40)
+    local encoded_email="${email/@/%40}"
+    export BUNDLE_ARTIFACTORY__HASHICORP__ENGINEERING="${encoded_email}:${token}"
+    
+    log_info "Artifactory token configured successfully"
+    return 0
+}
+
 # Initialize tfcdev
 initialize_tfcdev() {
     log_step "Initializing tfcdev"
     
-    # Check if tfcdev is already initialized by checking for config
-    if [ -f "$HOME/.tfcdev/config.yml" ] || [ -f "$HOME/.config/tfcdev/config.yml" ]; then
+    # Resolve tfcdev's config dir the same way Go's os.UserConfigDir() does:
+    #   macOS  → ~/Library/Application Support
+    #   Linux  → $XDG_CONFIG_HOME, or ~/.config if unset
+    local tfcdev_config_dir
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        tfcdev_config_dir="$HOME/Library/Application Support"
+    else
+        tfcdev_config_dir="${XDG_CONFIG_HOME:-$HOME/.config}"
+    fi
+
+    # config.json is created on installation with empty values.
+    # A completed `tfcdev init` sets last_run_init.version to a non-empty semver string.
+    # Check for that to distinguish "installed but not initialized" from "initialized".
+    local tfcdev_config="$tfcdev_config_dir/tfcdev/config.json"
+    if [ -f "$tfcdev_config" ] && \
+       grep -Eq '"version": ".+"' "$tfcdev_config" 2>/dev/null; then
         log_skip "tfcdev already initialized"
         return 0
     fi
     
-    # Run tfcdev init and capture output
-    local init_output
-    init_output=$(tfcdev init 2>&1)
+    # Suggest the default code folder path (parent of all HashiCorp repos)
+    local code_folder="$HOME/hashicorp"
+    
+    echo ""
+    log_info "tfcdev will prompt you for the folder containing your HashiCorp repository working copies"
+    log_info "Suggested path: $code_folder"
+    echo ""
+    
+    # Create a temporary file to capture output
+    local temp_output
+    temp_output=$(mktemp)
+    
+    # Run tfcdev init interactively, using script command to preserve TTY
+    # This allows interactive input while capturing output
+    script -q "$temp_output" tfcdev init
     local exit_code=$?
+    
+    # Read the captured output
+    local init_output
+    init_output=$(cat "$temp_output")
+    rm -f "$temp_output"
     
     # Log the output to file
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] tfcdev init output:" >> "$LOG_FILE"
     echo "$init_output" >> "$LOG_FILE"
     
-    # Display the output to user
-    echo "$init_output"
-    
-    # Check for health check issues in the output
-    if echo "$init_output" | grep -q "Report built with issues reported"; then
-        log_error "tfcdev initialization completed but health checks reported issues"
-        log_error "Please review the health check output above and resolve any issues"
-        log_info "See https://go.hashi.co/troubleshoot-tfcdev-health for troubleshooting assistance"
+    # Check exit code first
+    if [ $exit_code -ne 0 ]; then
+        log_error "tfcdev initialization failed with exit code: $exit_code"
         return 1
     fi
     
-    # Check exit code
-    if [ $exit_code -eq 0 ]; then
+    # Check if initialization completed
+    if ! echo "$init_output" | grep -q "Initialization complete"; then
+        log_error "tfcdev init completed but initialization message not found"
+        return 1
+    fi
+    
+    # Check for successful health report
+    if echo "$init_output" | grep -q "Report completed successfully"; then
         log_info "tfcdev initialized successfully with all health checks passing"
+        
+        # Apply shell configuration
+        log_step "Applying tfcdev shell configuration"
+        eval "$(tfcdev rc)" 2>/dev/null || true
+        
+        return 0
+    elif echo "$init_output" | grep -q "Report built with issues reported"; then
+        log_warn "tfcdev initialized but health checks reported some issues"
+        log_info "These may be non-critical warnings (e.g., version updates, container not running)"
+        log_info "See https://go.hashi.co/troubleshoot-tfcdev-health for troubleshooting if needed"
+        
+        # Apply shell configuration even with warnings
+        log_step "Applying tfcdev shell configuration"
+        eval "$(tfcdev rc)" 2>/dev/null || true
+        
+        # Continue despite warnings - let user decide if they need to fix
         return 0
     else
-        log_error "tfcdev initialization failed with exit code: $exit_code"
+        log_error "tfcdev health check status unclear - please review output above"
         return 1
     fi
 }
@@ -202,6 +309,7 @@ run_repository_phase() {
     execute_phase "REPOSITORY" \
         clone_atlas_repo \
         install_tfcdev \
+        setup_artifactory_token \
         initialize_tfcdev \
         reserve_tfcdev_domain \
         validate_repository

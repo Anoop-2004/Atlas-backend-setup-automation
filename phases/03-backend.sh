@@ -101,7 +101,7 @@ start_docker_containers() {
     eval "$(tfcdev env)"
     
     # Start containers and wait for them to be healthy
-    docker compose up -d --wait
+    run_cmd_retry docker compose up -d --wait
     
     if [ $? -eq 0 ]; then
         log_info "Docker containers started successfully"
@@ -111,7 +111,8 @@ start_docker_containers() {
         
         # Show logs for debugging
         log_step "Showing container logs for debugging:"
-        docker compose logs --tail=50
+        log_command "docker compose logs --tail=50"
+        docker compose logs --tail=50 2>&1 | tee -a "$LOG_FILE"
         
         return 1
     fi

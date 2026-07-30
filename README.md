@@ -9,9 +9,24 @@ Atlas is a full-stack Rails/Ember application that powers HCP Terraform (formerl
 - Download [Docker Desktop](https://docs.docker.com/desktop/setup/install/mac-install/) and move it to Applications folder.
 - Request access to Hashicorp Okta and Hashicorp Okta Certificate using [IBM AccessHub](https://ibm-support.saviyntcloud.com/ECMv6/request/requestHome).
 - Once the access is granted log into Artifactory through your Okta dashboard.
-- Request pull access to artifactory-users group which will also add the Artifactory tile to Okta. https://doormat.hashicorp.services/applications/access/artifactory/role/doormat-artifactory-users/option
+- Request pull access to artifactory-users group which will also add the Artifactory tile to Okta.
+    - Go to doormat -> App Access -> Request Access
+    - Choose Artifactory Application from drop down menu
+    - Request for artifactory-users group
+    - Provide a justification and click submit
   ![Requesting access to artifactory-users](images/doormat1.png)
 - User should have a github account with access to the hashicorp organization. (Consult your Engineering Manager for more information getting access)
+- Once your Github account gets activated, request access to following teams
+    - ["core" team](https://passport.hashicorp.services/namespaces/doormat/groups/github-access-core)
+    - [“terraform-enterprise” team ](https://passport.hashicorp.services/namespaces/doormat/groups/github-hashicorp-team-terraform-enterprise)
+- If you are doing the setup from home, make sure that VPN is disconnected and IPv6 is disabled in your system.
+    -   Go to System Settings-> Network-> WiFi
+    -   Click Details and go to TCP/IP
+    -   Change Configure options to 'link-local only'
+
+[Note]: Once the setup is complete, make sure to enable IPv6 in your system.
+
+[Note]: Access requests may take 2-3 hours to become effective. Run the script 2-3 hours after completing the prerequisites.
 
 ## SETUP
 
@@ -44,6 +59,6 @@ Atlas is a full-stack Rails/Ember application that powers HCP Terraform (formerl
 We welcome contributions to this project. To submit your changes:
 
 1. Create a Pull Request with your proposed modifications
-2. Add Anoop.P1@ibm.com and Aman.Bora@ibm.com as reviewers
+2. Add Anoop.P2@ibm.com and Aman.Bora@ibm.com as reviewers
 
 For questions or support, feel free to reach out to us on Slack.

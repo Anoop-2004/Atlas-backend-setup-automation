@@ -106,8 +106,8 @@ run_cmd_retry() {
     
     while [ $attempt -le $max_attempts ]; do
         log_command "$cmd (attempt $attempt/$max_attempts)"
-        
-        if eval "$cmd" 2>&1 | tee -a "$LOG_FILE"; then
+
+        if eval "$cmd"; then
             return 0
         fi
         
@@ -123,6 +123,29 @@ run_cmd_retry() {
     echo -e "${RED}[✗]${RESET} Command failed after $max_attempts attempts: $cmd" >&2
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: Command failed after $max_attempts attempts: $cmd" >> "$LOG_FILE"
     return 1
+}
+
+# Source asdf shell integration, tolerating path differences across Homebrew versions.
+# Older Homebrew asdf: $(brew --prefix asdf)/libexec/asdf.sh
+# Some versions:       $(brew --prefix asdf)/etc/profile.d/asdf.sh
+# Latest Homebrew asdf (>= 0.16): no asdf.sh — binary is on PATH, shims need explicit export
+source_asdf() {
+    local brew_prefix
+    brew_prefix="$(brew --prefix asdf 2>/dev/null)" || true
+
+    if [ -f "${brew_prefix}/libexec/asdf.sh" ]; then
+        # shellcheck disable=SC1091
+        . "${brew_prefix}/libexec/asdf.sh"
+    elif [ -f "${brew_prefix}/etc/profile.d/asdf.sh" ]; then
+        # shellcheck disable=SC1091
+        . "${brew_prefix}/etc/profile.d/asdf.sh"
+    elif command -v asdf >/dev/null 2>&1; then
+        # asdf >= 0.16: no shell integration file — ensure shims are on PATH
+        export PATH="$HOME/.asdf/shims:$PATH"
+    else
+        log_error "Cannot locate asdf. Is it installed? Run: brew install asdf"
+        return 1
+    fi
 }
 
 # Check if command exists

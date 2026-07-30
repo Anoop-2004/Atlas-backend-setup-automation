@@ -1,3 +1,6 @@
+#!/usr/bin/env bash
+# Phase 5: Stack Setup - Build and start Docker stack
+
 # Build Docker stack using tfcdev
 build_stack() {
     log_step "Building Docker stack with tfcdev"
@@ -6,7 +9,7 @@ build_stack() {
     cd "$atlas_dir" || return 1
     
     # Source asdf to ensure tfcdev is available
-    . "$(brew --prefix asdf)/libexec/asdf.sh"
+    source_asdf || return 1
     
     # Check if tfcdev is available
     if ! command_exists tfcdev; then
@@ -14,41 +17,8 @@ build_stack() {
         return 1
     fi
     
-    # Set up Artifactory token before building
-    log_step "Setting up Artifactory token for bundle"
-    
-    # Get email from environment variable or load from zshrc
-    local email="${IBM_EMAIL:-}"
-    
-    if [ -z "$email" ] && [ -f ~/.zshrc ]; then
-        # Load from zshrc if not in environment
-        email=$(grep '^export IBM_EMAIL=' ~/.zshrc 2>/dev/null | sed 's/^export IBM_EMAIL="\(.*\)"$/\1/')
-        if [ -n "$email" ]; then
-            export IBM_EMAIL="$email"
-            log_info "Loaded IBM_EMAIL from ~/.zshrc"
-        fi
-    fi
-    
-    if [ -z "$email" ]; then
-        log_error "IBM_EMAIL not found. Please ensure authentication phase completed successfully."
-        return 1
-    fi
-    
-    log_info "Using email: $email"
-    
-    local token
-    token=$(doormat login -f && doormat artifactory create-token | jq -r '.access_token')
-    
-    if [ -z "$token" ] || [ "$token" = "null" ]; then
-        log_error "Failed to get Doormat token for Bundler"
-        return 1
-    fi
-    
-    # URL encode the email (replace @ with %40)
-    local encoded_email="${email/@/%40}"
-    export BUNDLE_ARTIFACTORY__HASHICORP__ENGINEERING="${encoded_email}:${token}"
-    
-    log_info "Artifactory token configured successfully"
+    # Set up Artifactory token before building (function defined in phases/02-repository.sh)
+    setup_artifactory_token || return 1
     
     # Run tfcdev stack build with retry
     run_cmd_retry tfcdev stack build
@@ -70,7 +40,7 @@ start_stack() {
     cd "$atlas_dir" || return 1
     
     # Source asdf to ensure tfcdev is available
-    . "$(brew --prefix asdf)/libexec/asdf.sh"
+    source_asdf || return 1
     
     # Run tfcdev stack up with retry
     run_cmd_retry tfcdev stack up

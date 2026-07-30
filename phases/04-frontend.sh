@@ -6,7 +6,7 @@ install_nodejs() {
     log_step "Installing Node.js via asdf"
     
     # Source asdf
-    . "$(brew --prefix asdf)/libexec/asdf.sh"
+    source_asdf || return 1
     
     # Add nodejs plugin if not already added
     if ! asdf plugin list | grep -q "nodejs"; then
@@ -46,7 +46,7 @@ install_pnpm() {
     log_step "Installing pnpm via asdf"
     
     # Source asdf
-    . "$(brew --prefix asdf)/libexec/asdf.sh"
+    source_asdf || return 1
     
     # Add pnpm plugin if not already added
     if ! asdf plugin list | grep -q "pnpm"; then
@@ -90,7 +90,7 @@ install_frontend_dependencies() {
     cd "$frontend_dir" || return 1
     
     # Source asdf to ensure pnpm is available
-    . "$(brew --prefix asdf)/libexec/asdf.sh"
+    source_asdf || return 1
     
     # Check if node_modules already exists
     if [ -d "node_modules" ]; then
@@ -119,18 +119,13 @@ build_frontend() {
     cd "$frontend_dir" || return 1
     
     # Source asdf
-    . "$(brew --prefix asdf)/libexec/asdf.sh"
-    
-    # Check if already built
-    if [ -d "dist" ]; then
-        log_skip "Frontend already built"
-        return 0
-    fi
+    source_asdf || return 1
     
     pnpm build
     
     if [ -d "dist" ]; then
         log_info "Frontend built successfully"
+        prompt_frontend_start
         return 0
     else
         log_error "Frontend build failed"
@@ -138,6 +133,19 @@ build_frontend() {
     fi
 }
 
+# Prompt user to start the frontend dev server and display ngrok credentials
+prompt_frontend_start() {
+    log_step "Retrieving ngrok credentials"
+
+    local ngrok_output
+    ngrok_output=$(tfcdev env ngrok 2>&1)
+
+    local ngrok_user ngrok_pass
+    ngrok_user=$(echo "$ngrok_output" | grep 'NGROK_HTTP_BASIC_AUTH_USER' | sed 's/.*="\(.*\)"/\1/')
+    ngrok_pass=$(echo "$ngrok_output" | grep 'NGROK_HTTP_BASIC_AUTH_PASSWORD' | sed 's/.*="\(.*\)"/\1/')
+
+    prompt_user_action "To run the frontend dev server:\n\n  1. Open a new terminal\n  2. cd ~/hashicorp/atlas/frontend/atlas\n  3. pnpm start\n  4. Go to http://localhost:4200/\n\nUse the following credentials to log in:\n\n  Username: ${ngrok_user}\n  Password: ${ngrok_pass}"
+}
 
 
 
@@ -146,7 +154,7 @@ validate_frontend() {
     log_step "Validating frontend setup"
     
     # Source asdf
-    . "$(brew --prefix asdf)/libexec/asdf.sh"
+    source_asdf || return 1
     
     local failed=0
     
